@@ -1,0 +1,31 @@
+# Laravel environment
+.env
+.env.*
+!.env.example
+.phpunit.result.cache
+.phpunit.cache/
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Laravel generated files
+/public/build/
+/public/hot
+/public/storage
+/public/fonts-manifest.dev.json
+/storage/*.key
+/storage/logs/*.log
+/storage/pail/
+/bootstrap/cache/*.php
+
+# IDE helpers
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+
+# Local tools
+/.codex/
+/.mcp.json
+/auth.json
+/boost.json

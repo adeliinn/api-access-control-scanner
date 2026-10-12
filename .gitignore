@@ -1,31 +1,25 @@
-/vendor/
-node_modules/
-npm-debug.log
-yarn-error.log
+# macOS
+.DS_Store
+Thumbs.db
 
-# Laravel 4 specific
-bootstrap/compiled.php
-app/storage/
+# IDE / Editors
+.idea/
+.vscode/
+.cursor/
+.nova/
+.zed/
 
-# Laravel 5 & Lumen specific
-public/storage
-public/hot
+# AI assistant configuration
+api/.agents/
+api/.claude/
+api/.junie/
+api/AGENTS.md
+api/CLAUDE.md
 
-# Laravel 5 & Lumen specific with changed public path
-public_html/storage
-public_html/hot
-
-storage/*.key
+# Local environment
 .env
-Homestead.yaml
-Homestead.json
-/.vagrant
-.phpunit.result.cache
-/.phpunit.cache
+.env.*
+!.env.example
 
-/public/build
-/storage/pail
-.env.backup
-.env.production
-.phpactor.json
-auth.json
+# Logs
+*.log
