@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\VulnerableOrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,3 +24,12 @@ Route::put('/orders/{id}', [OrderController::class, 'update'])
 Route::delete('/orders/{id}', [OrderController::class, 'destroy'])
     ->whereNumber('id')
     ->middleware('auth:sanctum');
+
+if(app()->environment('local')){
+    Route::get(
+        '/vulnerable-orders/{id}',
+        [VulnerableOrderController::class, 'show']
+    )
+        ->whereNumber('id')
+        ->middleware('auth:sanctum');
+}

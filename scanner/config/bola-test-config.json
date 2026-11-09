@@ -1,0 +1,64 @@
+
+{
+  "base_url": "http://localhost:8000",
+  "endpoints": {
+    "secure": "/api/orders/{id}",
+    "vulnerable": "/api/vulnerable-orders/{id}"
+  },
+  "users": {
+    "alice": {
+      "role": "user",
+      "user_id": 1,
+      "token_env": "ALICE_TOKEN"
+    },
+    "bob": {
+      "role": "user",
+      "user_id": 2,
+      "token_env": "BOB_TOKEN"
+    },
+    "admin": {
+      "role": "admin",
+      "user_id": 3,
+      "token_env": "ADMIN_TOKEN"
+    }
+  },
+  "test_cases": [
+    {
+      "id": "BOLA-02",
+      "actor": "alice",
+      "resource_owner": "bob",
+      "endpoint": "secure",
+      "expected_status": 403
+    },
+    {
+      "id": "BOLA-03",
+      "actor": "bob",
+      "resource_owner": "alice",
+      "endpoint": "secure",
+      "expected_status": 403
+    },
+    {
+      "id": "BOLA-04",
+      "actor": "admin",
+      "resource_owner": "bob",
+      "endpoint": "secure",
+      "expected_status": 200
+    },
+    {
+      "id": "BOLA-06",
+      "actor": "alice",
+      "resource_owner": "bob",
+      "endpoint": "vulnerable",
+      "expected_status": 200,
+      "expected_finding": "BOLA"
+    },
+    {
+      "id": "BOLA-07",
+      "actor": "bob",
+      "resource_owner": "alice",
+      "endpoint": "vulnerable",
+      "expected_status": 200,
+      "expected_finding": "BOLA"
+    }
+  ]
+}

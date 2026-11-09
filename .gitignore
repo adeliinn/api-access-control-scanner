@@ -23,3 +23,12 @@ api/CLAUDE.md
 
 # Logs
 *.log
+
+# Python BOLA scanner
+scanner/.env
+scanner/.venv/
+__pycache__/
+*.pyc
+
+# PhpStorm run configurations
+.run/
