@@ -95,6 +95,86 @@ def check_order_access(base_url, endpoint, order_id, token):
 
 
 
+def run_bola_test(base_url, config, test_case):
+    test_id = test_case["id"]
+    actor = test_case["actor"]
+    resource_owner = test_case["resource_owner"]
+    endpoint_name = test_case["endpoint"]
+
+    actor_config = config["users"][actor]
+    token = os.getenv(actor_config["token_env"])
+
+    if not token:
+            print(f"[FAIL] {test_id}: Token for {actor} is missing.")
+
+            return {
+                "test_id": test_id,
+                "actor": actor,
+                "resource_owner": resource_owner,
+                "order_id": None,
+                "endpoint": endpoint_name,
+                "expected_status": test_case["expected_status"],
+                "actual_status": None,
+                "result": "FAIL",
+                "error": "Authentication token is missing",
+            }
+
+    order_id = config["resources"][f"{resource_owner}_order_id"]
+    endpoint = config["endpoints"][endpoint_name]
+
+    status, data = check_order_access(
+        base_url,
+        endpoint,
+        order_id,
+        token,
+    )
+
+
+    expected_status = test_case["expected_status"]
+    expected_owner_id = config["users"][resource_owner]["user_id"]
+
+    if status is None:
+        result = "FAIL"
+
+    elif status != expected_status:
+        result = "FAIL"
+
+    elif status == 200 and data.get("user_id") != expected_owner_id:
+        result = "FAIL"
+
+    elif (
+        test_case.get("expected_finding") == "BOLA"
+        and actor != resource_owner
+        and actor_config["role"] != "admin"
+        and status == 200
+        and data.get("user_id") == expected_owner_id
+    ):
+        result = "VULNERABLE"
+
+    else:
+        result = "PASS"
+
+    print(
+        f"[{result}] {test_id}: "
+        f"{actor} -> {resource_owner}'s order "
+        f"(ID {order_id}), endpoint={endpoint_name}, "
+        f"HTTP {status}, expected {expected_status}"
+    )
+
+    return {
+        "test_id": test_id,
+        "actor": actor,
+        "resource_owner": resource_owner,
+        "order_id": order_id,
+        "endpoint": endpoint_name,
+        "expected_status": expected_status,
+        "actual_status": status,
+        "result": result,
+    }
+
+
+
+
 def main():
     print("=== BOLA Scanner ===")
 
@@ -149,7 +229,8 @@ def main():
 
     alice_token = os.getenv("ALICE_TOKEN")
 
-    bob_order_id = 3
+    alice_order_id = config["resources"]["alice_order_id"]
+    bob_order_id = config["resources"]["bob_order_id"]
 
     if alice_token:
         status, data = check_order_access(
@@ -198,6 +279,68 @@ def main():
             print(f"[INFO] Unexpected HTTP status: {secure_status}")
     else:
         print("[ERROR] Alice token is missing.")
+
+
+
+
+    print("\n=== Automated BOLA Test Cases ===")
+
+    results = {
+        "PASS": 0,
+        "FAIL": 0,
+        "VULNERABLE": 0,
+    }
+
+
+    test_results = []
+
+    for test_case in config["test_cases"]:
+        test_result = run_bola_test(base_url, config, test_case)
+
+        if test_result is None:
+            results["FAIL"] += 1
+            continue
+
+        test_results.append(test_result)
+
+        result = test_result["result"]
+
+        if result in results:
+            results[result] += 1
+        else:
+            results["FAIL"] += 1
+
+
+    print("\n=== Test Summary ===")
+    print(f"Total tests: {len(config['test_cases'])}")
+    print(f"Passed: {results['PASS']}")
+    print(f"Failed: {results['FAIL']}")
+    print(f"BOLA findings: {results['VULNERABLE']}")
+
+
+
+
+    # Save scan results to JSON
+    report_dir = Path(__file__).resolve().parent / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    report_path = report_dir / "bola-results.json"
+
+    report = {
+        "target": base_url,
+        "total_tests": len(config["test_cases"]),
+        "summary": {
+            "passed": results["PASS"],
+            "failed": results["FAIL"],
+            "bola_findings": results["VULNERABLE"],
+        },
+        "test_results": test_results,
+    }
+
+    with report_path.open("w", encoding="utf-8") as file:
+        json.dump(report, file, indent=4, ensure_ascii=False)
+
+    print(f"\nReport saved to: {report_path}")
 
 
 

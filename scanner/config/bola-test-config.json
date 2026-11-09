@@ -5,6 +5,10 @@
     "secure": "/api/orders/{id}",
     "vulnerable": "/api/vulnerable-orders/{id}"
   },
+  "resources": {
+    "alice_order_id": 1,
+    "bob_order_id": 3
+  },
   "users": {
     "alice": {
       "role": "user",

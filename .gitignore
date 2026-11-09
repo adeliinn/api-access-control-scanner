@@ -32,3 +32,6 @@ __pycache__/
 
 # PhpStorm run configurations
 .run/
+
+# Generated scanner reports
+scanner/reports/*.json
