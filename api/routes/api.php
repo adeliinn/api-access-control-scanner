@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AdminOrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\VulnerableAdminOrderController;
 use App\Http\Controllers\Api\VulnerableOrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,8 @@ Route::put('/orders/{id}', [OrderController::class, 'update'])
 Route::delete('/orders/{id}', [OrderController::class, 'destroy'])
     ->whereNumber('id')
     ->middleware('auth:sanctum');
+Route::get('/admin/orders', [AdminOrderController::class, 'index'])
+    ->middleware('auth:sanctum');
 
 if(app()->environment('local')){
     Route::get(
@@ -31,5 +35,10 @@ if(app()->environment('local')){
         [VulnerableOrderController::class, 'show']
     )
         ->whereNumber('id')
+        ->middleware('auth:sanctum');
+    Route::get('/vulnerable-admin-orders', [
+        VulnerableAdminOrderController::class,
+        'index'
+    ])
         ->middleware('auth:sanctum');
 }

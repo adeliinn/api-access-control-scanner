@@ -95,6 +95,36 @@ def check_order_access(base_url, endpoint, order_id, token):
 
 
 
+def check_function_access(base_url, endpoint, token=None):
+    url = base_url.rstrip("/") + endpoint
+
+    headers = {
+        "Accept": "application/json",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    request = Request(
+        url,
+        headers=headers,
+        method="GET",
+    )
+
+    try:
+        with urlopen(request, timeout=5) as response:
+            return response.status, json.load(response)
+
+    except HTTPError as error:
+        return error.code, {}
+
+    except URLError as error:
+        print(f"Connection error: {error.reason}")
+        return None, {}
+
+
+
+
 def run_bola_test(base_url, config, test_case):
     test_id = test_case["id"]
     actor = test_case["actor"]
@@ -171,6 +201,76 @@ def run_bola_test(base_url, config, test_case):
         "actual_status": status,
         "result": result,
     }
+
+
+
+
+
+def run_bfla_test(base_url, config, test_case):
+    test_id = test_case["id"]
+    actor = test_case["actor"]
+    endpoint_name = test_case["endpoint"]
+    expected_status = test_case["expected_status"]
+
+    endpoint = config["endpoints"][endpoint_name]
+
+    # Unauthenticated test case: request without a token
+    if actor == "unauthenticated":
+        token = None
+        actor_role = None
+    else:
+        actor_config = config["users"][actor]
+        actor_role = actor_config["role"]
+        token = os.getenv(actor_config["token_env"])
+
+        if not token:
+            print(f"[FAIL] {test_id}: Token for {actor} is missing.")
+
+            return {
+                "test_id": test_id,
+                "actor": actor,
+                "endpoint": endpoint_name,
+                "expected_status": expected_status,
+                "actual_status": None,
+                "result": "FAIL",
+                "error": "Authentication token is missing",
+            }
+
+    status, data = check_function_access(
+        base_url,
+        endpoint,
+        token,
+    )
+
+    # Unauthorized function access takes priority over
+    # the expected HTTP status.
+    if (
+        actor_role == "user"
+        and status == 200
+    ):
+        result = "VULNERABLE"
+
+    elif status == expected_status:
+        result = "PASS"
+
+    else:
+        result = "FAIL"
+
+    print(
+        f"[{result}] {test_id}: "
+        f"{actor} -> {endpoint_name}, "
+        f"HTTP {status}, expected {expected_status}"
+    )
+
+    return {
+        "test_id": test_id,
+        "actor": actor,
+        "endpoint": endpoint_name,
+        "expected_status": expected_status,
+        "actual_status": status,
+        "result": result,
+    }
+
 
 
 
@@ -341,6 +441,66 @@ def main():
         json.dump(report, file, indent=4, ensure_ascii=False)
 
     print(f"\nReport saved to: {report_path}")
+
+
+    # Automated BFLA tests
+    print("\n=== Automated BFLA Test Cases ===")
+
+    bfla_config_path = (
+        Path(__file__).resolve().parent
+        / "config"
+        / "bfla-test-config.json"
+    )
+
+    with bfla_config_path.open("r", encoding="utf-8") as file:
+        bfla_config = json.load(file)
+
+    bfla_results = {
+        "PASS": 0,
+        "FAIL": 0,
+        "VULNERABLE": 0,
+    }
+
+    bfla_test_results = []
+
+    for test_case in bfla_config["test_cases"]:
+        test_result = run_bfla_test(
+            bfla_config["base_url"],
+            bfla_config,
+            test_case,
+        )
+
+        bfla_test_results.append(test_result)
+        bfla_results[test_result["result"]] += 1
+
+    print("\n=== BFLA Test Summary ===")
+    print(f"Total tests: {len(bfla_test_results)}")
+    print(f"Passed: {bfla_results['PASS']}")
+    print(f"Failed: {bfla_results['FAIL']}")
+    print(f"BFLA findings: {bfla_results['VULNERABLE']}")
+
+    bfla_report_path = report_dir / "bfla-results.json"
+
+    bfla_report = {
+        "target": bfla_config["base_url"],
+        "total_tests": len(bfla_test_results),
+        "summary": {
+            "passed": bfla_results["PASS"],
+            "failed": bfla_results["FAIL"],
+            "bfla_findings": bfla_results["VULNERABLE"],
+        },
+        "test_results": bfla_test_results,
+    }
+
+    with bfla_report_path.open("w", encoding="utf-8") as file:
+        json.dump(
+            bfla_report,
+            file,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    print(f"\nBFLA report saved to: {bfla_report_path}")
 
 
 

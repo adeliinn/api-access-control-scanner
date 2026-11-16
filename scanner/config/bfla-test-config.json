@@ -1,0 +1,68 @@
+
+{
+  "base_url": "http://localhost:8000",
+  "endpoints": {
+    "secure": "/api/admin/orders",
+    "vulnerable": "/api/vulnerable-admin-orders"
+  },
+  "users": {
+    "alice": {
+      "role": "user",
+      "token_env": "ALICE_TOKEN"
+    },
+    "bob": {
+      "role": "user",
+      "token_env": "BOB_TOKEN"
+    },
+    "admin": {
+      "role": "admin",
+      "token_env": "ADMIN_TOKEN"
+    }
+  },
+  "test_cases": [
+    {
+      "id": "BFLA-01",
+      "actor": "alice",
+      "endpoint": "secure",
+      "expected_status": 403
+    },
+    {
+      "id": "BFLA-02",
+      "actor": "bob",
+      "endpoint": "secure",
+      "expected_status": 403
+    },
+    {
+      "id": "BFLA-03",
+      "actor": "admin",
+      "endpoint": "secure",
+      "expected_status": 200
+    },
+    {
+      "id": "BFLA-04",
+      "actor": "alice",
+      "endpoint": "vulnerable",
+      "expected_status": 200,
+      "expected_finding": "BFLA"
+    },
+    {
+      "id": "BFLA-05",
+      "actor": "bob",
+      "endpoint": "vulnerable",
+      "expected_status": 200,
+      "expected_finding": "BFLA"
+    },
+    {
+      "id": "BFLA-06",
+      "actor": "admin",
+      "endpoint": "vulnerable",
+      "expected_status": 200
+    },
+    {
+      "id": "BFLA-07",
+      "actor": "unauthenticated",
+      "endpoint": "vulnerable",
+      "expected_status": 401
+    }
+  ]
+}
