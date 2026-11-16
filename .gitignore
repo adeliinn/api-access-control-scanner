@@ -35,3 +35,10 @@ __pycache__/
 
 # Generated scanner reports
 scanner/reports/*.json
+
+# Local Postman workspace metadata
+.postman/
+postman/
+
+# Local Laravel Boost MCP configuration
+.ai/mcp/mcp.json
