@@ -63,6 +63,24 @@
       "actor": "unauthenticated",
       "endpoint": "vulnerable",
       "expected_status": 401
+    },
+    {
+      "id": "BFLA-08",
+      "actor": "unauthenticated",
+      "endpoint": "secure",
+      "expected_status": 401
+    },
+    {
+      "id": "BFLA-09",
+      "actor": "invalid_token",
+      "endpoint": "secure",
+      "expected_status": 401
+    },
+    {
+      "id": "BFLA-10",
+      "actor": "invalid_token",
+      "endpoint": "vulnerable",
+      "expected_status": 401
     }
   ]
 }

@@ -66,18 +66,22 @@ def check_user_authentication(base_url, token):
 
 
 
-def check_order_access(base_url, endpoint, order_id, token):
+def check_order_access(base_url, endpoint, order_id, token=None):
     url = (
         base_url.rstrip("/")
         + endpoint.replace("{id}", str(order_id))
     )
 
+    headers = {
+    "Accept": "application/json",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
     request = Request(
         url,
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
-        },
+        headers=headers,
         method="GET",
     )
 
@@ -90,6 +94,14 @@ def check_order_access(base_url, endpoint, order_id, token):
 
     except URLError as error:
         print(f"Connection error: {error.reason}")
+        return None, {}
+
+    except json.JSONDecodeError:
+        print("Invalid JSON response from API.")
+        return None, {}
+
+    except TimeoutError:
+        print("Request timeout.")
         return None, {}
 
 
@@ -122,6 +134,14 @@ def check_function_access(base_url, endpoint, token=None):
         print(f"Connection error: {error.reason}")
         return None, {}
 
+    except json.JSONDecodeError:
+        print("Invalid JSON response from API.")
+        return None, {}
+
+    except TimeoutError:
+        print("Request timeout.")
+        return None, {}
+
 
 
 
@@ -131,10 +151,19 @@ def run_bola_test(base_url, config, test_case):
     resource_owner = test_case["resource_owner"]
     endpoint_name = test_case["endpoint"]
 
-    actor_config = config["users"][actor]
-    token = os.getenv(actor_config["token_env"])
+    if actor == "unauthenticated":
+        actor_config = {"role": "guest"}
+        token = None
 
-    if not token:
+    elif actor == "invalid_token":
+        actor_config = {"role": "guest"}
+        token = "invalid-test-token"
+
+    else:
+        actor_config = config["users"][actor]
+        token = os.getenv(actor_config["token_env"])
+
+    if actor != "unauthenticated" and not token:
             print(f"[FAIL] {test_id}: Token for {actor} is missing.")
 
             return {
@@ -166,20 +195,23 @@ def run_bola_test(base_url, config, test_case):
     if status is None:
         result = "FAIL"
 
-    elif status != expected_status:
-        result = "FAIL"
-
-    elif status == 200 and data.get("user_id") != expected_owner_id:
-        result = "FAIL"
-
     elif (
-        test_case.get("expected_finding") == "BOLA"
-        and actor != resource_owner
+        actor != resource_owner
         and actor_config["role"] != "admin"
         and status == 200
+        and isinstance(data, dict)
         and data.get("user_id") == expected_owner_id
     ):
         result = "VULNERABLE"
+
+    elif status != expected_status:
+        result = "FAIL"
+
+    elif status == 200 and (
+        not isinstance(data, dict)
+        or data.get("user_id") != expected_owner_id
+    ):
+        result = "FAIL"
 
     else:
         result = "PASS"
@@ -214,10 +246,14 @@ def run_bfla_test(base_url, config, test_case):
 
     endpoint = config["endpoints"][endpoint_name]
 
-    # Unauthenticated test case: request without a token
     if actor == "unauthenticated":
         token = None
         actor_role = None
+
+    elif actor == "invalid_token":
+        token = "invalid-test-token"
+        actor_role = None
+
     else:
         actor_config = config["users"][actor]
         actor_role = actor_config["role"]
@@ -242,8 +278,6 @@ def run_bfla_test(base_url, config, test_case):
         token,
     )
 
-    # Unauthorized function access takes priority over
-    # the expected HTTP status.
     if (
         actor_role == "user"
         and status == 200
@@ -298,7 +332,6 @@ def main():
         print(f"API returned HTTP {status}.")
         return
 
-    # Authentication tests
     print("\n=== Authentication Tests ===")
 
     for username, user_config in config["users"].items():
@@ -420,7 +453,6 @@ def main():
 
 
 
-    # Save scan results to JSON
     report_dir = Path(__file__).resolve().parent / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -443,7 +475,6 @@ def main():
     print(f"\nReport saved to: {report_path}")
 
 
-    # Automated BFLA tests
     print("\n=== Automated BFLA Test Cases ===")
 
     bfla_config_path = (

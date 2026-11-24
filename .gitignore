@@ -42,3 +42,9 @@ postman/
 
 # Local Laravel Boost MCP configuration
 .ai/mcp/mcp.json
+
+# Python testing and coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/

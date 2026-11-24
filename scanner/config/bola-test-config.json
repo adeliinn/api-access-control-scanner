@@ -63,6 +63,34 @@
       "endpoint": "vulnerable",
       "expected_status": 200,
       "expected_finding": "BOLA"
+    },
+    {
+      "id": "BOLA-08",
+      "actor": "unauthenticated",
+      "resource_owner": "alice",
+      "endpoint": "secure",
+      "expected_status": 401
+    },
+    {
+      "id": "BOLA-09",
+      "actor": "unauthenticated",
+      "resource_owner": "bob",
+      "endpoint": "vulnerable",
+      "expected_status": 401
+    },
+    {
+      "id": "BOLA-10",
+      "actor": "invalid_token",
+      "resource_owner": "alice",
+      "endpoint": "secure",
+      "expected_status": 401
+    },
+    {
+      "id": "BOLA-11",
+      "actor": "invalid_token",
+      "resource_owner": "bob",
+      "endpoint": "vulnerable",
+      "expected_status": 401
     }
   ]
 }
